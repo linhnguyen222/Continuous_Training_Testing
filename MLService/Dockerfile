@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:latest
+# FROM python:3.8-slim-buster
+WORKDIR /app
+RUN apt-get -y update
+RUN apt-get install python3.8 -y 
+RUN apt-get install python3-pip -y
+# copy source code
+COPY ./server/requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+RUN pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
+COPY ./server ./server
+COPY ./LSTM_single_series ./LSTM_single_series
+COPY ./steel-climber-303808-7df11bf1a845.json .
+RUN export GOOGLE_APPLICATION_CREDENTIALS="./steel-climber-303808-7df11bf1a845.json"
+RUN mkdir Result
+CMD ["python3", "./server/run_server.py"]
+

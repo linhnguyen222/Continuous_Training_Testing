@@ -1,0 +1,13 @@
+version: 1.0
+provider:
+  name: openfaas
+  gateway: https://127.0.0.1:8080
+functions:
+  hello-python:
+    lang: python
+    handler: ./hello-python
+    # push to the registry, use user1 as the prefix
+    image: 972010/hello-python:latest
+
+
+

@@ -1,0 +1,7 @@
+version: '3'
+services:
+  server:
+    container_name: bts_server
+    image: bts_server:lastest
+    environment:
+      - AMQP_URL=amqps://kattclvg:phyP2rUTThSnUo9aaIaVRysG-E4Ei5c7@hawk.rmq.cloudamqp.com/kattclvg
