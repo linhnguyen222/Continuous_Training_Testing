@@ -1,12 +1,10 @@
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from sklearn.metrics import mean_squared_error
-import sys
-import logging
+import json
 
 def main():
     # Read dataset from file
@@ -73,17 +71,42 @@ def main():
     model.add(layers.LSTM(32, return_sequences=True))
     model.add(layers.TimeDistributed(layers.Dense(1)))
     model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.005))
-    model.fit(train_features, train_labels, epochs=100, batch_size=1, verbose=2)
-    result = model.predict(test_features, batch_size=1, verbose=0)
-    # print(result)
-    x=pd.DataFrame(test_labels.reshape(test_labels.shape[0],test_labels.shape[1]))
-    y=pd.DataFrame(result.reshape(result.shape[0],result.shape[1]))
-    y_true = np.array(x[0])
-    y_pred = np.array(y[0])
-    mse = mean_squared_error(y_true, y_pred)
-    print(mse)
-    model_dir_path = "./LSTM_single_series"
+    model.fit(train_features, train_labels, epochs=1, batch_size=1, verbose=2)
+    # result = model.predict(test_features, batch_size=1, verbose=0)
+    # # print(result)
+    # x=pd.DataFrame(test_labels.reshape(test_labels.shape[0],test_labels.shape[1]))
+    # y=pd.DataFrame(result.reshape(result.shape[0],result.shape[1]))
+    # y_true = np.array(x[0])
+    # y_pred = np.array(y[0])
+    # mse = mean_squared_error(y_true, y_pred)
+    # print(mse)
+    # Convert the model.
+    # Save the model.
+    saved_model_path = "./LSTM_single_series/saved_model"
+    model.save(saved_model_path)
+    converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(saved_model_path)
+    converter.optimizations = [tf.lite.Optimize.DEFAULT]
+    converter.experimental_new_converter = True
+    converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
+    # converter.target_spec.supported_ops = [
+    #     # tf.lite.OpsSet.TFLITE_BUILTINS, # enable TensorFlow Lite ops.
+    #     tf.lite.OpsSet.SELECT_TF_OPS # enable TensorFlow ops.
+    # ]
+    tflite_model = converter.convert()
+    model_dir_path = "./LSTM_single_series/LSTM_single_series.tflite"
+    with open(model_dir_path, 'wb') as f:
+        f.write(tflite_model)
     
+    normalization_param = {
+        "mean_val": mean_val,
+        "max_val": max_val
+    }
+    # Serializing json 
+    normalization_param_json = json.dumps(normalization_param, indent = 4)
+    
+    # Writing to sample.json
+    with open("./LSTM_single_series/param.json", "w") as jsonfile:
+        jsonfile.write(normalization_param_json)
 
 if __name__ == "__main__":
     main()

@@ -42,14 +42,12 @@ class InputStreaming(DataStreaming):
     def publish_input(self):
         print("publishing data", self.file_name)
         with open("{}/grouped_data/{}".format(parentdir, self.file_name), "r") as filel:
-            print("opened")
             data_lines = filel.readlines()
-            print("data", data_lines)
             for line_no in range(1, len(data_lines)):
                 line = data_lines[line_no]
                 line_arr = line.split(",")
                 point_id = line_arr[0]
-                data_point = [[float(i)] for i in line_arr[:6]]
+                data_point = [float(i) for i in line_arr[:6]]
                 input_msg = {
                             "id": point_id,
                             "data_type": "input",
@@ -58,7 +56,7 @@ class InputStreaming(DataStreaming):
                         }
                 self.channel.basic_publish(exchange=self.stream_xchange, routing_key="", body=json.dumps(input_msg))
                 print(" [x] Sent input %r" % data_point)
-                time.sleep(3)
+                # time.sleep(3)
 
 
 class LabelStreaming(DataStreaming):
@@ -72,23 +70,23 @@ class LabelStreaming(DataStreaming):
                 line = data_lines[line_no]
                 line_arr = line.split(",")
                 point_id = line_arr[0]
-                label = line_arr[6]
+                label = line_arr[1]
                 label_msg = {
                     "id": point_id,
                     "data_type": "label",
-                    "value": label,
+                    "value": float(label.strip()),
                     "send_date": self.send_date
                 }
                 self.channel.basic_publish(exchange=self.stream_xchange, routing_key="", body=json.dumps(label_msg))
                 print(" [x] Sent label %r" % label_msg)
-                time.sleep(3)
+                # time.sleep(3)
             end_of_file_msg = {
                     "data_type": "end-of-file",
                     "send_date": self.send_date
             }
-            self.channel.basic_publish(exchange=self.stream_xchange, routing_key="", body=json.dumps(label_msg))
+            self.channel.basic_publish(exchange=self.stream_xchange, routing_key="", body=json.dumps(end_of_file_msg))
             print(" [x] Sent end of file notice %r" % end_of_file_msg)
-            time.sleep(3)
+            # time.sleep(3)
 
 
 def stream_input(file_name, send_date):
@@ -105,7 +103,6 @@ def stream_label(file_name, send_date):
 
 def handle_streaming_data():
     print("parent", parentdir)
-    # list_of_files = os.listdir("{}/grouped_data".format(parentdir))
     now = datetime.now()
     send_date = now.strftime("%m_%d_%y")
 

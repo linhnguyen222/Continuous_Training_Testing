@@ -1,5 +1,7 @@
 # --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
-numpy
+numpy~=1.19.2
 pika
 python-dotenv
-gcloud
+# gcloud
+google-cloud-storage
+pandas
