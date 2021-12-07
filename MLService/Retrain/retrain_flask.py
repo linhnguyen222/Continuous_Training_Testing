@@ -5,12 +5,12 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tflite_runtime.interpreter as tflite
 import os, inspect
-# from flask import Flask, request
+from flask import Flask, request
 from google.cloud import storage
 
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
-# app = Flask(__name__)
+app = Flask(__name__)
 gsclient = storage.Client()
 import json
 def retrain(file_name):
@@ -91,7 +91,10 @@ def retrain(file_name):
         model_dir_path = "./LSTM_single_series/LSTM_single_series.tflite"
         with open(model_dir_path, 'wb') as f:
             f.write(tflite_model)
-        
+        # lstm_tflite = "LSTM_single_series/LSTM_single_series.tflite"
+        # bucket = gsclient.get_bucket('bts-data-atss')
+        # blob = bucket.blob(lstm_tflite)
+        # blob.upload_to_filename(lstm_tflite)
         normalization_param = {
             "mean_val": mean_val,
             "max_val": max_val
@@ -103,26 +106,18 @@ def retrain(file_name):
         with open("./LSTM_single_series/param.json", "w") as jsonfile:
             jsonfile.write(normalization_param_json)
         
-# @app.route('/retrain', methods=["POST"])
-# def trigger_rest_api():
-#     # print("trigger retrain with", file_name)
-#     file_name = json.loads(request.form.get('file_name')) 
-#     # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
-#     bucket = gsclient.get_bucket('bts-data-atss')
-#     blob = bucket.blob(file_name)
-#     blob.download_to_filename(file_name)
-#     retrain(file_name)
-#     return 'retrained successfully with %s' % file_name
-
-def trigger_func_call(file_name):
+@app.route('/retrain', methods=["POST"])
+def trigger_rest_api():
     # print("trigger retrain with", file_name)
+    file_name = json.loads(request.form.get('file_name')) 
     # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
     bucket = gsclient.get_bucket('bts-data-atss')
     blob = bucket.blob(file_name)
     blob.download_to_filename(file_name)
     retrain(file_name)
     return 'retrained successfully with %s' % file_name
-# if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=8080, debug=True)
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=8080, debug=True)
 
  

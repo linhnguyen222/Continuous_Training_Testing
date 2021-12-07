@@ -29,4 +29,4 @@ COPY ./steel-climber-303808-7df11bf1a845.json .
 ENV GOOGLE_APPLICATION_CREDENTIALS="./steel-climber-303808-7df11bf1a845.json"
 RUN mkdir Result
 EXPOSE 8080
-CMD python3 Retrain/retrain.py && python3 server/run_server.py
+CMD python3 server/run_server.py

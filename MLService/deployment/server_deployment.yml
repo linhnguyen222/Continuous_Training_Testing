@@ -15,6 +15,6 @@ spec:
         app: bts-server
     spec:
       containers:
-      - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts_server:latest
-        name: bts-server
-        # imagePullPolicy: Always
+      - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts-server-retrain:latest
+        name: bts-server-retrain
+        imagePullPolicy: Always

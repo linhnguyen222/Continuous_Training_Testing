@@ -9,6 +9,7 @@ from datetime import datetime
 import os,sys,inspect
 from google.cloud import storage
 import requests
+from Retrain.retrain import trigger_func_call
 # import tensorflow as tf
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -135,16 +136,20 @@ class StaticServer:
                 y_pred = np.array(daily_prediction_result["prediction"])
                 MSE = np.square(np.subtract(y_true,y_pred)).mean()
                 if MSE > 0.1:
-                    API_ENDPOINT = "http://0.0.0.0:8080/retrain"
-                    param = {
-                    "file_name": json.dumps("Result/12_06_21.csv")
-                    }
-                    # sending post request and saving response as response object
-                    response = requests.post(url = API_ENDPOINT, data = param)
+                    # API_ENDPOINT = "http://0.0.0.0:8080/retrain"
+                    # param = {
+                    # "file_name": json.dumps("Result/12_06_21.csv")
+                    # }
+                    # # sending post request and saving response as response object
+                    # response = requests.post(url = API_ENDPOINT, data = param)
 
-                    # result = response.json()
-                    # extracting response text 
-                    print("retrain-response",response)
+                    # # result = response.json()
+                    # # extracting response text 
+                    # print("retrain-response",response)
+                    print("Trigger retrain")
+                    trigger_func_call(file_to_upload)
+                    print("Retrained done")
+
             
         else:   
             self.channel.basic_reject(delivery_tag=method.delivery_tag, requeue=False)

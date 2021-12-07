@@ -1,6 +1,6 @@
 pandas>=1.0.0
 tensorflow==2.4.1
-flask
+# flask
 numpy~=1.19.2
 pika
 google-cloud-storage
