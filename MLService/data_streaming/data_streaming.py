@@ -26,10 +26,11 @@ class DataStreaming:
         # self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost')) 
         self.param = pika.URLParameters(param)
         self.connection = pika.BlockingConnection(self.param) 
+        # pika.BlockingConnection(pika.ConnectionParameters(host='localhost'))
+        # 
         self.channel = self.connection.channel()
         self.stream_xchange = 'data_streaming_fanout'
         self.channel.exchange_declare(exchange=self.stream_xchange, exchange_type='fanout')
-        print("here")
     def close(self):
         # Do not edit this method
         self.channel.close()
@@ -46,6 +47,7 @@ class InputStreaming(DataStreaming):
             for line_no in range(1, len(data_lines)):
                 line = data_lines[line_no]
                 line_arr = line.split(",")
+                line_arr.pop(1)
                 point_id = line_arr[0]
                 data_point = [float(i) for i in line_arr[:6]]
                 input_msg = {
@@ -110,7 +112,7 @@ def handle_streaming_data():
     t1 = threading.Thread(name='stream_input', target=stream_input, args=[file_name, send_date])
     t2 = threading.Thread(name='stream_label', target=stream_label, args=[file_name, send_date])
     t1.start()
-    time.sleep(5)
+    # time.sleep(4)
     t2.start()
 
     t1.join()

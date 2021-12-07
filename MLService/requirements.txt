@@ -1,14 +1,6 @@
-numpy
 pandas>=1.0.0
-tensorlow==2.4.1
-sklearn
-# scikit-learn
-# matplotlib
-# mlflow
-# cffi==1.14.6
-# pillow==8.3.1
-# pyyaml==5.4.1
-# scipy==1.6.2
-# tflite_runtime
-# Flask==1.1.2
-# pika
+tensorflow==2.4.1
+flask
+numpy~=1.19.2
+pika
+google-cloud-storage

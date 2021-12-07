@@ -2,14 +2,13 @@
 import tflite_runtime.interpreter as tflite
 import numpy as np
 import json
-import time
 import pika
 import json
 import pandas as pd
 from datetime import datetime
 import os,sys,inspect
-import threading
 from google.cloud import storage
+import requests
 # import tensorflow as tf
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -34,29 +33,33 @@ class StaticServer:
         self.gsclient = storage.Client()
         self.buffer = np.zeros((7, 1), dtype=np.float32)
         self.pointer = 0
+        self.data = {}
+        with open("./LSTM_single_series/param.json") as f:
+            self.data = json.load(f)
 
     def initialize_rabbitmq(self, param):
         # self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost')) 
         self.param = pika.URLParameters(param)
         self.connection = pika.BlockingConnection(self.param) 
+    #     self.connection = pika.BlockingConnection(
+    # pika.ConnectionParameters(host='localhost'))
         self.channel = self.connection.channel() 
 
         self.stream_xchange = 'data_streaming_fanout'
         self.stream_queue = 'bts_data'
-        # self.stream_queue = 'bts_data2'
+# self.channel.queue_declare(queue=self.stream_queue, durable=True)
+        result = self.channel.queue_declare(queue="", durable=True)
+        self.queue_name = result.method.queue
 
-        self.channel.queue_declare(queue=self.stream_queue, durable=True)
-        # self.channel.queue_declare(queue=self.stream_queue2, durable=True)
         self.channel.exchange_declare(exchange = self.stream_xchange, exchange_type='fanout')
 
-        self.channel.queue_bind(exchange=self.stream_xchange, queue=self.stream_queue, routing_key="")
+        self.channel.queue_bind(exchange=self.stream_xchange, queue=self.queue_name)
         # self.channel.queue_bind(exchange=self.stream_xchange, queue=self.stream_queue2, routing_key="2")
     def update_buffer(self,new_val):
-        # print("new val",new_val)
-        # print("buffer", self.buffer)
+        # print("new val", new_val)
         if self.pointer <= 7:
             # self.buffer = self.buffer[:6]
-            self.buffer = np.concatenate((np.array([new_val], dtype=np.float32),self.buffer[:6]))
+            self.buffer = np.concatenate((np.array([[new_val]], dtype=np.float32),self.buffer[:6]))
         if self.pointer < 7:
             self.pointer= self.pointer + 1
  
@@ -65,10 +68,8 @@ class StaticServer:
         # Example input
         # [[5693281222.0], [11.0], [1161114004.0], [122.0], [1.493254874e+18], [-0.47443986275555555]]
         with open("./LSTM_single_series/param.json") as f:
-            data = json.load(f)
-            buffer = pd.DataFrame(self.buffer, columns=["id","value","station_id","parameter_id","unix_timestamp"])
-            buffer["norm_value"] = (buffer["value"] - data["mean_val"])/data["max_val"]
-            serial_data = buffer.drop(["id","value","station_id","parameter_id","unix_timestamp"], axis=1)
+            # print("buffer", self.buffer)
+            serial_data = pd.DataFrame(self.buffer, columns=["norm_value"])
             serial_data['norm_1'] = serial_data['norm_value'].shift(1)
             serial_data['norm_2'] = serial_data['norm_value'].shift(2)
             serial_data['norm_3'] = serial_data['norm_value'].shift(3)
@@ -91,7 +92,6 @@ class StaticServer:
             input = msg["value"]
             input_data = np.array(input, dtype=np.float32)
             # Need to run input preprocessing
-
             input_data = self.input_preprocessing()
             # print("input data", input_data)
             self.interpreter.set_tensor(self.input_details[0]['index'], [input_data])
@@ -103,15 +103,18 @@ class StaticServer:
             self.result[msg_id]["input"] = input
             self.result[msg_id]["output"] = prediction_result
         elif msg["data_type"] == "label" and "input" in self.result[msg_id]: 
-            self.result[msg_id]["label"] = msg["value"]
+            self.result[msg_id]["raw_label"] = msg["value"]
+            label = (msg["value"] - self.data["mean_val"])/self.data["max_val"]
+            self.result[msg_id]["label"] = label
+            self.update_buffer(label)
             # now = datetime.now()
             send_date = msg["send_date"]
             # today = now.strftime("%m_%d_%y")
-            # print("opening", '{}/Result/{}.csv'.format(parentdir, send_date))
+            print("opening", '{}/Result/{}.csv'.format(parentdir, send_date))
             input_str = ", ".join(["{}".format(x) for x in self.result[msg_id]["input"]])
             with open('{}/Result/{}.csv'.format(parentdir, send_date), 'a') as f:
-                print("result", self.result)
-                new_line = "{input}, {label}, {pred}".format(input=input_str, label=self.result[msg_id]["label"], pred=self.result[msg_id]["output"])
+                # print("result", self.result)
+                new_line = "{input}, {raw_label}, {label}, {pred}".format(input=input_str, raw_label= self.result[msg_id]["raw_label"], label=self.result[msg_id]["label"], pred=self.result[msg_id]["output"])
                 print("new line", new_line)
                 f.write(new_line)
                 f.write("\n")
@@ -119,19 +122,29 @@ class StaticServer:
         if msg["data_type"] == "end-of-file": 
             bucket = self.gsclient.get_bucket('bts-data-atss')
             file_to_upload = "Result/{}.csv".format(msg["send_date"])
-            print("UPLOADING", file_to_upload)
-            # blob = bucket.blob(file_to_upload)
-            # blob.upload_from_filename(file_to_upload)
-            print("RESULT UPLOADED")
-            # Trigger retrain
-            # Step1: calculate the msg of the day calculation
-            daily_prediction_result = pd.read_csv("Result/12_05_21.csv", 
-                names=["id","value","station_id","parameter_id","unix_timestamp","label", "prediction"])
-            y_true = np.array(daily_prediction_result["label"])
-            y_pred = np.array(daily_prediction_result["prediction"])
-            MSE = np.square(np.subtract(y_true,y_pred)).mean()
-            if MSE > 0.1:
-                pass
+            if os.path.exists(file_to_upload):
+                print("UPLOADING", file_to_upload)
+                blob = bucket.blob(file_to_upload)
+                blob.upload_from_filename(file_to_upload)
+                print("RESULT UPLOADED")
+                # Trigger retrain
+                # Step1: calculate the msg of the day calculation
+                daily_prediction_result = pd.read_csv(file_to_upload, 
+                    names=["id","station_id","parameter_id","unix_timestamp","norm_time","value", "label", "prediction"])
+                y_true = np.array(daily_prediction_result["label"])
+                y_pred = np.array(daily_prediction_result["prediction"])
+                MSE = np.square(np.subtract(y_true,y_pred)).mean()
+                if MSE > 0.1:
+                    API_ENDPOINT = "http://0.0.0.0:8080/retrain"
+                    param = {
+                    "file_name": json.dumps("Result/12_06_21.csv")
+                    }
+                    # sending post request and saving response as response object
+                    response = requests.post(url = API_ENDPOINT, data = param)
+
+                    # result = response.json()
+                    # extracting response text 
+                    print("retrain-response",response)
             
         else:   
             self.channel.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
@@ -139,7 +152,7 @@ class StaticServer:
         self.channel.basic_ack(method.delivery_tag)
 
     def start_consuming(self):
-        self.channel.basic_consume(queue=self.stream_queue, on_message_callback=self.handle_receiving_data)
+        self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.handle_receiving_data)
         self.channel.start_consuming()
 
 def handle_server():

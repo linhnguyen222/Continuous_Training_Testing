@@ -12,7 +12,7 @@ RUN pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflit
 COPY ./server ./server
 COPY ./LSTM_single_series ./LSTM_single_series
 COPY ./steel-climber-303808-7df11bf1a845.json .
-RUN export GOOGLE_APPLICATION_CREDENTIALS="./steel-climber-303808-7df11bf1a845.json"
+ENV GOOGLE_APPLICATION_CREDENTIALS="./steel-climber-303808-7df11bf1a845.json"
 RUN mkdir Result
 CMD ["python3", "./server/run_server.py"]
 

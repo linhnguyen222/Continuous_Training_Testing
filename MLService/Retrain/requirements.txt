@@ -1,0 +1,5 @@
+numpy
+pandas>=1.0.0
+tensorlow==2.4.1
+sklearn
+flask

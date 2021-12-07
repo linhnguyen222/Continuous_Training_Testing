@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1
+FROM ubuntu:latest
+WORKDIR /app
+RUN apt-get -y update
+RUN apt-get install python3.8 -y 
+RUN apt-get install python3-pip -y
+RUN apt-get install curl -y
+COPY ./requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+RUN pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
+
+# # Downloading gcloud package
+# RUN curl https://dl.google.com/dl/cloudsdk/release/google-cloud-sdk.tar.gz > /tmp/google-cloud-sdk.tar.gz
+
+# # Installing the package
+# RUN mkdir -p /usr/local/gcloud \
+#   && tar -C /usr/local/gcloud -xvf /tmp/google-cloud-sdk.tar.gz \
+#   && /usr/local/gcloud/google-cloud-sdk/install.sh
+
+# # Adding the package path to local
+# ENV PATH $PATH:/usr/local/gcloud/google-cloud-sdk/bin
+
+# copy source code
+COPY ./Retrain ./Retrain
+COPY ./server ./server
+# COPY ../deployment ./deployment
+COPY ../LSTM_single_series ./LSTM_single_series
+COPY ./steel-climber-303808-7df11bf1a845.json .
+ENV GOOGLE_APPLICATION_CREDENTIALS="./steel-climber-303808-7df11bf1a845.json"
+RUN mkdir Result
+EXPOSE 8080
+CMD python3 Retrain/retrain.py && python3 server/run_server.py
