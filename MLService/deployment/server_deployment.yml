@@ -1,18 +1,18 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: ml-deployment
+  name: bts-server-retrain
   labels:
-    app: bts-server
+    app: bts-server-retrain
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bts-server
+      app: bts-server-retrain
   template:
     metadata:
       labels:
-        app: bts-server
+        app: bts-server-retrain
     spec:
       containers:
       - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts-server-retrain:latest

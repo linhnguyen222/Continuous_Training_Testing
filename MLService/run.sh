@@ -4,8 +4,8 @@ docker build -t rabbitmq:3.9-consistent_hash_x_enabled .
 
 docker run -d --rm --name rabbitmq -p 5672:5672 -p 15672:15672 rabbitmq:3.9-consistent_hash_x_enabled
 
-gcloud container clusters create bts-cluster --zone europe-north1-a --num-nodes 2 --machine-type=e2-small
-docker build -t bts-server-retrain:latest .
+gcloud container clusters create bts-cluster2 --zone europe-north1-a --num-nodes 2 --machine-type=e2-small
+docker build -f Dockerfile.server-retrain -t bts-server-retrain:latest .
 # https://cloud.google.com/artifact-registry/docs/docker/pushing-and-pulling#linux
 gcloud auth configure-docker europe-north1-docker.pkg.dev
 gcloud components install docker-credential-gcr

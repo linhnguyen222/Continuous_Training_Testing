@@ -14,10 +14,13 @@ In the orginal version, I plan to have a serverless container deployed on GCP cl
 ![The current design](./figures/Current_version.drawio.png)
 
 In the current version, the retrain is done within the kubernetes node, because I find running docker inside a docker image quite fragile, and due to time constraint I have not come up with a good alternative solution yet.
+
+The container works fine locally, however, the fit function crash on gcp KE, and it's not obvious to me how to debug this.
+![Fit function crash](./figures/crash-fit-function.png)
 ## Demo
 Since the server is deployed on GCP, we can try streaming the data by cloning the repository, installing pika, then running:
 ```
-    python3 data_streaming/run_data_streaming.py
+    python3 data_streaming/run_streaming.py
 ```
 
 ## Reflection

@@ -149,6 +149,15 @@ class StaticServer:
                     print("Trigger retrain")
                     trigger_func_call(file_to_upload)
                     print("Retrained done")
+                    self.interpreter = tflite.Interpreter(model_path="{}/LSTM_single_series/LSTM_single_series.tflite".format(parentdir))
+                    self.interpreter.allocate_tensors()
+                    # Get input and output tensors.
+                    self.input_details = self.interpreter.get_input_details()
+                    self.output_details = self.interpreter.get_output_details()
+                    print("Model updated!")
+                    with open("{}/LSTM_single_series/param.json".format(parentdir)) as f:
+                        self.data = json.load(f)
+                    print("Parameter updated!")
 
             
         else:   

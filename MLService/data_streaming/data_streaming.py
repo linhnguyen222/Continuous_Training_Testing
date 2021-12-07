@@ -1,6 +1,7 @@
 import pika
 import re, json
 from datetime import datetime
+import time
 # from dotenv import dotenv_values
 import threading
 import os,sys,inspect
@@ -110,7 +111,7 @@ def handle_streaming_data():
     t1 = threading.Thread(name='stream_input', target=stream_input, args=[file_name, send_date])
     t2 = threading.Thread(name='stream_label', target=stream_label, args=[file_name, send_date])
     t1.start()
-    # time.sleep(4)
+    time.sleep(4)
     t2.start()
 
     t1.join()
