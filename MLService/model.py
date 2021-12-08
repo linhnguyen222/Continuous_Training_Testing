@@ -84,7 +84,7 @@ def main():
     # Save the model.
     saved_model_path = "./LSTM_single_series/saved_model"
     model.save(saved_model_path)
-    converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(saved_model_path)
+    converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
     converter.optimizations = [tf.lite.Optimize.DEFAULT]
     converter.experimental_new_converter = True
     converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]

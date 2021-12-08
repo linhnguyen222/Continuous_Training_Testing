@@ -4,10 +4,10 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 import tflite_runtime.interpreter as tflite
-import os, inspect
+import os, inspect, sys
 # from flask import Flask, request
 from google.cloud import storage
-
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
 # app = Flask(__name__)
@@ -58,10 +58,10 @@ def retrain(file_name):
     model.add(layers.LSTM(128, return_sequences=True))
     model.add(layers.TimeDistributed(layers.Dense(1)))
     model.compile(loss='mean_squared_error', optimizer=tf.keras.optimizers.Adam(0.005))
-    print("fitting model")
+    print("fitting model using tf cpu only")
     model.fit(train_features, train_labels, epochs=100, batch_size=1, verbose=2)
     print("done fitting, predicting new result")
-    new_result = model.predict(test_features, batch_size=1, verbose=0)
+    new_result = model.predict(test_features, batch_size=1, verbose=2)
     print("done predicting")
     # load saved_model 
     print("trying to load the in-use model")
@@ -90,7 +90,7 @@ def retrain(file_name):
     if new_model_mse < old_model_mse:
         saved_model_path = "{}/LSTM_single_series/saved_model".format(parentdir)
         model.save(saved_model_path)
-        converter = tf.compat.v1.lite.TFLiteConverter.from_saved_model(saved_model_path)
+        converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.experimental_new_converter = True
         converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
@@ -109,7 +109,13 @@ def retrain(file_name):
         # Writing to sample.json
         with open("{}/LSTM_single_series/param.json".format(parentdir), "w") as jsonfile:
             jsonfile.write(normalization_param_json)
-        
+    test_json_fn = "{}/LSTM_single_series/param.json".format(parentdir)
+    bucket = gsclient.get_bucket('bts-data-atss')
+    print("UPLOADING", test_json_fn)
+    blob = bucket.blob(test_json_fn)
+    blob.upload_from_filename(test_json_fn)
+    print("RESULT UPLOADED")
+    sys.stdout.flush()
 # @app.route('/retrain', methods=["POST"])
 # def trigger_rest_api():
 #     # print("trigger retrain with", file_name)

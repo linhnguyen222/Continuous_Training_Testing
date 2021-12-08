@@ -18,3 +18,6 @@ spec:
       - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts-server-retrain:latest
         name: bts-server-retrain
         imagePullPolicy: Always
+        resources:
+          requests:
+            memory: "1Gi"

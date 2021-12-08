@@ -103,6 +103,7 @@ class StaticServer:
             prediction_result = output_data[0][0][0]
             self.result[msg_id]["input"] = input
             self.result[msg_id]["output"] = prediction_result
+            # self.channel.basic_ack(method.delivery_tag)
         elif msg["data_type"] == "label" and "input" in self.result[msg_id]: 
             self.result[msg_id]["raw_label"] = msg["value"]
             label = (msg["value"] - self.data["mean_val"])/self.data["max_val"]
@@ -120,6 +121,7 @@ class StaticServer:
                 f.write(new_line)
                 f.write("\n")
             self.result.pop(msg_id)
+            # self.channel.basic_ack(method.delivery_tag)
         if msg["data_type"] == "end-of-file": 
             bucket = self.gsclient.get_bucket('bts-data-atss')
             file_to_upload = "Result/{}.csv".format(msg["send_date"])
@@ -158,12 +160,14 @@ class StaticServer:
                     with open("{}/LSTM_single_series/param.json".format(parentdir)) as f:
                         self.data = json.load(f)
                     print("Parameter updated!")
-
+            # self.channel.basic_ack(method.delivery_tag)
             
         else:   
             self.channel.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
             return
+        print("come here")
         self.channel.basic_ack(method.delivery_tag)
+        print("ack")
 
     def start_consuming(self):
         self.channel.basic_consume(queue=self.queue_name, on_message_callback=self.handle_receiving_data)
