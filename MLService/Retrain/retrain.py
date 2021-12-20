@@ -116,26 +116,14 @@ def retrain(file_name):
     blob.upload_from_filename(test_json_fn)
     print("RESULT UPLOADED")
     sys.stdout.flush()
-# @app.route('/retrain', methods=["POST"])
-# def trigger_rest_api():
-#     # print("trigger retrain with", file_name)
-#     file_name = json.loads(request.form.get('file_name')) 
-#     # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
-#     bucket = gsclient.get_bucket('bts-data-atss')
-#     blob = bucket.blob(file_name)
-#     blob.download_to_filename(file_name)
-#     retrain(file_name)
-#     return 'retrained successfully with %s' % file_name
 
-def trigger_func_call(file_name):
-    # print("trigger retrain with", file_name)
+def start_retrain():
+    file_name = json.loads(request.form.get('file_name')) 
     # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
     bucket = gsclient.get_bucket('bts-data-atss')
     blob = bucket.blob(file_name)
     blob.download_to_filename(file_name)
     retrain(file_name)
-    return 'retrained successfully with %s' % file_name
-# if __name__ == '__main__':
-    # app.run(host='0.0.0.0', port=8080, debug=True)
+
 
  

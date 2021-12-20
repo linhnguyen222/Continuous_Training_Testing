@@ -132,12 +132,12 @@ class StaticServer:
                 print("RESULT UPLOADED")
                 # Trigger retrain
                 # Step1: calculate the msg of the day calculation
-                daily_prediction_result = pd.read_csv(file_to_upload, 
-                    names=["id","station_id","parameter_id","unix_timestamp","norm_time","value", "label", "prediction"])
-                y_true = np.array(daily_prediction_result["label"])
-                y_pred = np.array(daily_prediction_result["prediction"])
-                MSE = np.square(np.subtract(y_true,y_pred)).mean()
-                if MSE > 0.1:
+                # daily_prediction_result = pd.read_csv(file_to_upload, 
+                #     names=["id","station_id","parameter_id","unix_timestamp","norm_time","value", "label", "prediction"])
+                # y_true = np.array(daily_prediction_result["label"])
+                # y_pred = np.array(daily_prediction_result["prediction"])
+                # MSE = np.square(np.subtract(y_true,y_pred)).mean()
+                # if MSE > 0.1:
                     # API_ENDPOINT = "http://0.0.0.0:8080/retrain"
                     # param = {
                     # "file_name": json.dumps("Result/12_06_21.csv")
@@ -148,19 +148,19 @@ class StaticServer:
                     # # result = response.json()
                     # # extracting response text 
                     # print("retrain-response",response)
-                    print("Trigger retrain")
-                    trigger_func_call(file_to_upload)
-                    print("Retrained done")
-                    self.interpreter = tflite.Interpreter(model_path="{}/LSTM_single_series/LSTM_single_series.tflite".format(parentdir))
-                    self.interpreter.allocate_tensors()
-                    # Get input and output tensors.
-                    self.input_details = self.interpreter.get_input_details()
-                    self.output_details = self.interpreter.get_output_details()
-                    print("Model updated!")
-                    with open("{}/LSTM_single_series/param.json".format(parentdir)) as f:
-                        self.data = json.load(f)
-                    print("Parameter updated!")
-            # self.channel.basic_ack(method.delivery_tag)
+            #         print("Trigger retrain")
+            #         trigger_func_call(file_to_upload)
+            #         print("Retrained done")
+            #         self.interpreter = tflite.Interpreter(model_path="{}/LSTM_single_series/LSTM_single_series.tflite".format(parentdir))
+            #         self.interpreter.allocate_tensors()
+            #         # Get input and output tensors.
+            #         self.input_details = self.interpreter.get_input_details()
+            #         self.output_details = self.interpreter.get_output_details()
+            #         print("Model updated!")
+            #         with open("{}/LSTM_single_series/param.json".format(parentdir)) as f:
+            #             self.data = json.load(f)
+            #         print("Parameter updated!")
+            # # self.channel.basic_ack(method.delivery_tag)
             
         else:   
             self.channel.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
