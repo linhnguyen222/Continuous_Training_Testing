@@ -117,13 +117,17 @@ def retrain(file_name):
     print("RESULT UPLOADED")
     sys.stdout.flush()
 
-def start_retrain():
-    file_name = json.loads(request.form.get('file_name')) 
+def trigger_retrain():
+    # print("trigger retrain with", file_name)
+    # file_name = json.loads(request.form.get('file_name')) 
     # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
     bucket = gsclient.get_bucket('bts-data-atss')
-    blob = bucket.blob(file_name)
-    blob.download_to_filename(file_name)
-    retrain(file_name)
+    files = bucket.list_blobs()
+    fileList = [file.name for file in files if '.' in file.name]
+    blob = bucket.blob(fileList[0]) 
 
+    blob.download_to_filename(fileList[0])
+    retrain(fileList[0])
+    return 'retrained successfully with %s' % fileList[0]
 
  

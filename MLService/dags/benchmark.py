@@ -7,6 +7,7 @@ from textwrap import dedent
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from server.server import *
+from Retrain.retrain import trigger_retrain
 from data_streaming.data_streaming import *
 print(os.getcwd())
 def handle_failure():
@@ -42,11 +43,11 @@ with DAG(
         task_id = "bts_static_server",
         python_callable = handle_server,
     )
-    data_streaming = PythonOperator(
-        task_id = "bts_data_streaming",
-        python_callable = handle_streaming_data,
+    retrain = PythonOperator(
+        task_id = "bts_model_retrain",
+        python_callable = trigger_retrain,
     )
-    static_server
-    data_streaming
+    static_server > retrain
+    
 
 
