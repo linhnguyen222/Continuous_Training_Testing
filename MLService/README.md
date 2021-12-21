@@ -12,7 +12,7 @@ In the design, the system contain 3 core components: data streaming, ML inferenc
 
 The data streaming is running either locally or on a rapsberry pi, the prediction server is deployed as a container on GCP Kubernetes Engine, the retraining is running locally and scheduled to run everyday using Airflow, the data streaming and the server are communicating through a Rabbitmq exchange host on [CloudAMQP](https://www.cloudamqp.com/). The inference result is saved on GCP cloud storage, and downloaded for retraining.
 
-Currently, I am trying to de-couple the retraining and the prediction server.
+Currently, the streaming, and retraining can be triggered manually if Airflow is not installed.
 <!-- ### Current version
 [The current design](./figures/Current_version.drawio.png)
 

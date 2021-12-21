@@ -9,7 +9,7 @@ from datetime import datetime
 import os,sys,inspect
 from google.cloud import storage
 import requests
-from Retrain.retrain import trigger_func_call
+# from Retrain.retrain import trigger_func_call
 # import tensorflow as tf
 currentdir = os.path.dirname(os.path.abspath(inspect.getfile(inspect.currentframe())))
 parentdir = os.path.dirname(currentdir)
@@ -39,16 +39,13 @@ class StaticServer:
             self.data = json.load(f)
 
     def initialize_rabbitmq(self, param):
-        # self.connection = pika.BlockingConnection(pika.ConnectionParameters('localhost')) 
         self.param = pika.URLParameters(param)
         self.connection = pika.BlockingConnection(self.param) 
-    #     self.connection = pika.BlockingConnection(
-    # pika.ConnectionParameters(host='localhost'))
+
         self.channel = self.connection.channel() 
 
         self.stream_xchange = 'data_streaming_fanout'
         self.stream_queue = 'bts_data'
-# self.channel.queue_declare(queue=self.stream_queue, durable=True)
         result = self.channel.queue_declare(queue="", durable=True)
         self.queue_name = result.method.queue
 
@@ -65,7 +62,6 @@ class StaticServer:
             self.pointer= self.pointer + 1
  
     def input_preprocessing(self):
-        # print("buffer", self.buffer)
         # Example input
         # [[5693281222.0], [11.0], [1161114004.0], [122.0], [1.493254874e+18], [-0.47443986275555555]]
         with open("./LSTM_single_series/param.json") as f:
@@ -111,7 +107,6 @@ class StaticServer:
             self.update_buffer(label)
             # now = datetime.now()
             send_date = msg["send_date"]
-            # today = now.strftime("%m_%d_%y")
             print("opening", '{}/Result/{}.csv'.format(parentdir, send_date))
             input_str = ", ".join(["{}".format(x) for x in self.result[msg_id]["input"]])
             with open('{}/Result/{}.csv'.format(parentdir, send_date), 'a') as f:
@@ -121,7 +116,6 @@ class StaticServer:
                 f.write(new_line)
                 f.write("\n")
             self.result.pop(msg_id)
-            # self.channel.basic_ack(method.delivery_tag)
         if msg["data_type"] == "end-of-file": 
             bucket = self.gsclient.get_bucket('bts-data-atss')
             file_to_upload = "Result/{}.csv".format(msg["send_date"])
@@ -129,39 +123,7 @@ class StaticServer:
                 print("UPLOADING", file_to_upload)
                 blob = bucket.blob(file_to_upload)
                 blob.upload_from_filename(file_to_upload)
-                print("RESULT UPLOADED")
-                # Trigger retrain
-                # Step1: calculate the msg of the day calculation
-                # daily_prediction_result = pd.read_csv(file_to_upload, 
-                #     names=["id","station_id","parameter_id","unix_timestamp","norm_time","value", "label", "prediction"])
-                # y_true = np.array(daily_prediction_result["label"])
-                # y_pred = np.array(daily_prediction_result["prediction"])
-                # MSE = np.square(np.subtract(y_true,y_pred)).mean()
-                # if MSE > 0.1:
-                    # API_ENDPOINT = "http://0.0.0.0:8080/retrain"
-                    # param = {
-                    # "file_name": json.dumps("Result/12_06_21.csv")
-                    # }
-                    # # sending post request and saving response as response object
-                    # response = requests.post(url = API_ENDPOINT, data = param)
-
-                    # # result = response.json()
-                    # # extracting response text 
-                    # print("retrain-response",response)
-            #         print("Trigger retrain")
-            #         trigger_func_call(file_to_upload)
-            #         print("Retrained done")
-            #         self.interpreter = tflite.Interpreter(model_path="{}/LSTM_single_series/LSTM_single_series.tflite".format(parentdir))
-            #         self.interpreter.allocate_tensors()
-            #         # Get input and output tensors.
-            #         self.input_details = self.interpreter.get_input_details()
-            #         self.output_details = self.interpreter.get_output_details()
-            #         print("Model updated!")
-            #         with open("{}/LSTM_single_series/param.json".format(parentdir)) as f:
-            #             self.data = json.load(f)
-            #         print("Parameter updated!")
-            # # self.channel.basic_ack(method.delivery_tag)
-            
+                print("RESULT UPLOADED")    
         else:   
             self.channel.basic_reject(delivery_tag=method.delivery_tag, requeue=False)
             return

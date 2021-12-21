@@ -1,22 +1,22 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: bts-server-retrain
+  name: bts-server
   labels:
-    app: bts-server-retrain
+    app: bts-server
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: bts-server-retrain
+      app: bts-server
   template:
     metadata:
       labels:
-        app: bts-server-retrain
+        app: bts-server
     spec:
       containers:
-      - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts-server-retrain:latest
-        name: bts-server-retrain
+      - image: europe-north1-docker.pkg.dev/steel-climber-303808/btscontainer/bts-server:latest
+        name: bts-server
         imagePullPolicy: Always
         resources:
           requests:

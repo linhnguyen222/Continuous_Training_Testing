@@ -5,6 +5,7 @@ from tensorflow import keras
 from tensorflow.keras import layers
 import tflite_runtime.interpreter as tflite
 import os, inspect, sys
+import subprocess
 # from flask import Flask, request
 from google.cloud import storage
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
@@ -14,7 +15,7 @@ parentdir = os.path.dirname(currentdir)
 gsclient = storage.Client()
 import json
 def retrain(file_name):
-    print("running retrain")
+    print("running retrain", file_name)
         # Read dataset from file
     raw_dataset = pd.read_csv(file_name, 
         names=["id","station_id","parameter_id","unix_timestamp","norm_time","value", "label", "prediction"])
@@ -87,7 +88,9 @@ def retrain(file_name):
     new_model_mse = np.square(np.subtract(Y_true,Y_new_pred)).mean()
     old_model_mse = np.square(np.subtract(Y_true,Y_old_pred)).mean()
     print("new", new_model_mse, "old", old_model_mse)
-    if new_model_mse < old_model_mse:
+    # if new_model_mse < old_model_mse:
+    if True:
+        print("replace the new model with old model")
         saved_model_path = "{}/LSTM_single_series/saved_model".format(parentdir)
         model.save(saved_model_path)
         converter = tf.lite.TFLiteConverter.from_saved_model(saved_model_path)
@@ -105,29 +108,30 @@ def retrain(file_name):
         }
         # Serializing json 
         normalization_param_json = json.dumps(normalization_param, indent = 4)
-        
+        print("replace old param with new param")
         # Writing to sample.json
         with open("{}/LSTM_single_series/param.json".format(parentdir), "w") as jsonfile:
             jsonfile.write(normalization_param_json)
-    test_json_fn = "{}/LSTM_single_series/param.json".format(parentdir)
-    bucket = gsclient.get_bucket('bts-data-atss')
-    print("UPLOADING", test_json_fn)
-    blob = bucket.blob(test_json_fn)
-    blob.upload_from_filename(test_json_fn)
-    print("RESULT UPLOADED")
+
+        # start a subprocess to pack and deploy the model
+        print("build, tag, and push new model")
+        subprocess.call(['sh', '{}/deploy_server.sh'.format(parentdir)]) 
+
     sys.stdout.flush()
 
 def trigger_retrain():
-    # print("trigger retrain with", file_name)
-    # file_name = json.loads(request.form.get('file_name')) 
-    # if json.loads(request.form.get('file_name'))  else "/Result/12_06_21.csv"
+    
     bucket = gsclient.get_bucket('bts-data-atss')
     files = bucket.list_blobs()
-    fileList = [file.name for file in files if '.' in file.name]
-    blob = bucket.blob(fileList[0]) 
+    print("files", files)
+    fileList = [file.name for file in files if 'Result' in file.name]
+    print("fileList", fileList)
+    last_file = len(fileList)-1
+    blob = bucket.blob(fileList[last_file]) 
 
-    blob.download_to_filename(fileList[0])
-    retrain(fileList[0])
-    return 'retrained successfully with %s' % fileList[0]
+    blob.download_to_filename(fileList[last_file])
+    print("trigger retrain with", fileList[last_file])
+    retrain(fileList[last_file])
+    return 'retrained successfully with %s' % fileList[last_file]
 
- 
+trigger_retrain() 
