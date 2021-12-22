@@ -26,6 +26,10 @@ Since the server is deployed on GCP, we can try streaming the data by cloning th
     python3 data_streaming/run_streaming.py
 ```
 ## How to scale with multiple model:
+Scenario: instead of having only one model doing prediction for a specific station as we currently have now, in reality, a predictive maintenance service might need to take care of several BTS station. Because each station require a separate model trained on the data collected from the given station, we need the project to be more scalable, so that it can handle the retraining for several stations.
+
+First of all, the retraining mechanism will need to be revised for scalability. Instead of having the retraining service scheduled by Airflow, we would have the retrain as it own server, and have a gcp cloud function listen to the file upload event, whenever the file upload event is sent, we will send a request to the retrain-server to trigger retraining for a particular model.
+
 There are 2 ways of scaling the current architecture. Depending on the characteristic, and requirements of the service, we can scale the service either vertically or horizontally.
 
 If the service only consists of a few of models, given that the training time of our model is not very significant, e.g: only a couple of minutes, we can scale the system vertically, and retrain all the model in the same node. Thus, once a new file is uploaded with an identification tag for a specific model, we look up the configuration for the given model which might contain the deployment information, and retrain, and deploy the model accordingly. With this vertical training approach, since the training time and deployment for each of our model is quite short, only a couple of minutes, eg 3 minutes (2 minutes to retrain, and 1 minutes to be pushed to the Artifact Registry), if we have 5 models, in the worst case scenario, they all require to be retrained at the same time, then it takes only 15 minutes for the last model in the queue to be retrained, and deployed, which is still an exceptable amount of time.
