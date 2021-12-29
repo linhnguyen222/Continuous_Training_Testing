@@ -1,9 +1,10 @@
 # Continuous Training and continuous testing
 ## Overview
-The project illustrates the continuous training approach for an end-to-end ML system for predictive maintenance. 
+The project illustrates the continuous training and testing approach for an end-to-end ML system for predictive maintenance in a distributed system, and discuss how can we scale the system effectively. 
 
+When we serve a ML model for inference, the accuracy of the inference might deteriorate over time due to the shift in data distribution. Continuously re-train the model with new data might improve the model performance, and the reliablity of the service in the long run.
 
-
+Furthermore, the project shows how can we achive robustness and resilience by utilizing Kubernetes cluster for model serving.
 ## Architecture
 ### Design
 
@@ -12,19 +13,62 @@ In the design, the system contain 3 core components: data streaming, ML inferenc
 
 The data streaming is running either locally or on a rapsberry pi, the prediction server is deployed as a container on GCP Kubernetes Engine, the retraining is running locally and scheduled to run everyday using Airflow, the data streaming and the server are communicating through a Rabbitmq exchange host on [CloudAMQP](https://www.cloudamqp.com/). The inference result is saved on GCP cloud storage, and downloaded for retraining.
 
+The Kubernetes cluster for the prediction server is self-healing, can restart containers on failing 
+
 Currently, the streaming, and retraining can be triggered manually if Airflow is not installed.
-<!-- ### Current version
-[The current design](./figures/Current_version.drawio.png)
 
-In the current version, the retrain is done within the kubernetes node.
 
-The container works fine locally, however, the fit function crash on gcp KE, and it's not obvious to me how to debug this. -->
-![Fit function crash](./figures/crash-fit-function.png)
 ## Demo
-Since the server is deployed on GCP, we can try streaming the data by cloning the repository, installing pika, then running:
+### Prerequisite
+The project use `tflite_runtime`, `numpy`, `pandas`, `pika`, `google-cloud-storage`, `apache-airflow`.
+
+Install `tflite_runtime`:
+``` 
+pip3 install --extra-index-url https://google-coral.github.io/py-repo/ tflite_runtime
+```
+The rest can be installed through: 
+
+```
+pip3 install -r MLService/requirements.txt
+``` 
+
+Export Google cloud credential:
+```
+export GOOGLE_APPLICATION_CREDENTIALS="/Users/nguyenlinh/Macadamia/Advanced_SS_project/MLService/steel-climber-303808-7df11bf1a845.json"
+```
+
+If you want to test the scheduling with Airflow, firstly, we need to do some configuration.
+Airflow will create a file `airflow.cfg` in the Airflow folder (`~/airflow` by default). Inside `airflow.cfg`, replace the `dags_folder` content with the absolute path to `MLService/dags`.
+
+The you can quickly start by running:
+```
+airflow standalone
+```
+
+Standalone will initialise the database, make a user, and start all components automatically.
+
+### Run
+Since the server is deployed on GCP, we can try streaming the data by cloning the repository, installing pika, then start the data streaming by running:
 ```
     python3 data_streaming/run_streaming.py
 ```
+In case, the data is not available on the running date, one can create a mock dataset for that day by changing the name of a file in `MLService/grouped_data` to `{MM_DD_YY}_1161114004_122_.csv`. At the moment, when the data is not ready, the data from `11_29_21_1161114004_122_.csv` is used by default.
+
+The retraining can be triggered manually through:
+```
+    python3 MLService/Retrain/run_retrain.py
+```
+
+To test the project with airflow, export the dag for this project:
+```
+python3 {path}/MLService/dags/benchmark.py
+```
+
+Visit `http://0.0.0.0:8080/` or corresponding port that Airflow is run on, log in with username, and password provided on starting airflow with `airflow standalone`. Activate the dag, the dag will run at the scheduled time or run when it is triggered manually.
+
+
+
+
 ## How to scale with multiple model:
 Scenario: instead of having only one model doing prediction for a specific station as we currently have now, in reality, a predictive maintenance service might need to take care of several BTS station. Because each station require a separate model trained on the data collected from the given station, we need the project to be more scalable, so that it can handle the retraining for several stations.
 
@@ -39,7 +83,10 @@ However, in case we have a very large amount of models, or/and each of them take
 ## Reflection
 ### The most challenging aspect
 
-The most challenging aspect in this project for me was debugging container running on Kubernetes Engine. Because unlike local machine or a standard local machine where you can log in and debug your code directly, most of the debugging is done though the Kubernetes log on GCP, and I have to containerize and deploy the new container everytime a change or a new log is added for the debugging purpose, which is very time consuming. On top of that, in my experience, the logging system on Kubernetes Engine on GCP does not work correctly, and sometimes terminate the process before all the logs were printed out, therefore, can be very misleading on whether the code is ran correctly. This issue is currently dealt with using `sys.stdout.flush()`.
+![Fit function crash](./figures/crash-fit-function.png)
+
+The most challenging aspect in this project for me was debugging container running on Kubernetes Engine. Because, unlike local machine or a standard local machine where you can log in and debug your code directly, most of the debugging is done though the Kubernetes log on GCP, and I have to containerize and deploy the new container everytime a change or a new log is added for the debugging purpose, which is very time consuming. On top of that, in my experience, the logging system on Kubernetes Engine on GCP does not work correctly, and sometimes terminate the process before all the logs were printed out, therefore, can be very misleading on whether the code is ran correctly. For instance, the above picture indicates that the service seems to be frozen after finishing fitting LSTM model with new data. However, further debuggings discover that service still continues to work correctly, but the log gets stuck. This issue is currently dealt with using `sys.stdout.flush()`.
+
 
 ### The most interesting aspect
 

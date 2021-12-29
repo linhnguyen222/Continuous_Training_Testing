@@ -105,9 +105,10 @@ def stream_label(file_name, send_date):
 def handle_streaming_data():
     print("parent", parentdir)
     now = datetime.now()
-    send_date = now.strftime("%m_%d_%y")
-
+    send_date = now.strftime("%m_%d_%y") 
+    
     file_name = "{}_1161114004_122_.csv".format(send_date)
+    file_name = file_name if os.path.isfile("{}/grouped_data/{}".format(parentdir, file_name)) else "11_29_21_1161114004_122_.csv"
     t1 = threading.Thread(name='stream_input', target=stream_input, args=[file_name, send_date])
     t2 = threading.Thread(name='stream_label', target=stream_label, args=[file_name, send_date])
     t1.start()

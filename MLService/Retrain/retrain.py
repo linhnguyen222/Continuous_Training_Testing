@@ -133,5 +133,3 @@ def trigger_retrain():
     print("trigger retrain with", fileList[last_file])
     retrain(fileList[last_file])
     return 'retrained successfully with %s' % fileList[last_file]
-
-trigger_retrain() 
