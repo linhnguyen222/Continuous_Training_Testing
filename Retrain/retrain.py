@@ -128,7 +128,7 @@ def trigger_retrain():
     print("fileList", fileList)
     last_file = len(fileList)-1
     blob = bucket.blob(fileList[last_file]) 
-
+    print("try to download", blob)
     blob.download_to_filename(fileList[last_file])
     print("trigger retrain with", fileList[last_file])
     retrain(fileList[last_file])
